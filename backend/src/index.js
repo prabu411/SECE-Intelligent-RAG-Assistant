@@ -3,6 +3,7 @@ const cors = require("cors");
 const { MongoClient } = require("mongodb");
 const { RagService } = require("./ragService");
 const { InMemoryChatStore, MongoChatStore } = require("./chatStore");
+const { isAllowedUrl } = require("./scraper");
 
 const app = express();
 const ragService = new RagService();
@@ -30,6 +31,11 @@ app.post("/api/index", async (req, res) => {
 
   if (!startUrl) {
     res.status(400).json({ error: "startUrl is required" });
+    return;
+  }
+
+  if (!isAllowedUrl(startUrl)) {
+    res.status(400).json({ error: "startUrl must be an https://*.sece.ac.in URL" });
     return;
   }
 
@@ -70,4 +76,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { app, start };
+module.exports = { app, start, isAllowedStartUrl: isAllowedUrl };

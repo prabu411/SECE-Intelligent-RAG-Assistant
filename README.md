@@ -60,3 +60,4 @@ npm test
 The test suite validates:
 - Hyper-specific retrieval behavior
 - Zero-hallucination fallback when data is absent
+- Domain allow-list validation for indexing URLs

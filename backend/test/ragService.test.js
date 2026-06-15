@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { RagService, NOT_FOUND_MESSAGE } = require("../src/ragService");
+const { isAllowedStartUrl } = require("../src/index");
 
 function createFetchMock(pagesByUrl) {
   return async (url) => {
@@ -53,4 +54,12 @@ test("prevents hallucination when data is absent", async () => {
 
   assert.equal(response.answer, NOT_FOUND_MESSAGE);
   assert.equal(response.evidence.length, 0);
+});
+
+test("only allows sece domain for indexing startUrl", () => {
+  assert.equal(isAllowedStartUrl("https://sece.ac.in"), true);
+  assert.equal(isAllowedStartUrl("https://cse.sece.ac.in/dept"), false);
+  assert.equal(isAllowedStartUrl("http://sece.ac.in"), false);
+  assert.equal(isAllowedStartUrl("https://example.com"), false);
+  assert.equal(isAllowedStartUrl("not-a-url"), false);
 });

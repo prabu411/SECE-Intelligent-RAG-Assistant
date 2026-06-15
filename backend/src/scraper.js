@@ -1,9 +1,16 @@
-function htmlToText(html) {
-  const removedScripts = html
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ");
+const ALLOWED_ORIGIN = "https://sece.ac.in";
 
-  return removedScripts
+function isAllowedUrl(input) {
+  try {
+    const parsed = new URL(input);
+    return parsed.protocol === "https:" && parsed.origin === ALLOWED_ORIGIN;
+  } catch {
+    return false;
+  }
+}
+
+function htmlToText(html) {
+  return String(html || "")
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -16,8 +23,10 @@ function extractLinks(html, baseUrl) {
 
   while (match) {
     try {
-      const absolute = new URL(match[1], baseUrl).toString();
-      links.push(absolute);
+      const absolute = new URL(match[1], baseUrl);
+      if (absolute.origin === ALLOWED_ORIGIN) {
+        links.push(`${absolute.pathname}${absolute.search}`);
+      }
     } catch {
       // Ignore malformed links.
     }
@@ -28,17 +37,23 @@ function extractLinks(html, baseUrl) {
 }
 
 async function crawlSite(startUrl, maxPages = 10, fetchImpl = fetch) {
+  if (!isAllowedUrl(startUrl)) {
+    return [];
+  }
+
   const start = new URL(startUrl);
-  const queue = [start.toString()];
+  const queue = [`${start.pathname}${start.search}`];
   const visited = new Set();
   const pages = [];
 
   while (queue.length > 0 && pages.length < maxPages) {
-    const current = queue.shift();
-    if (visited.has(current)) continue;
-    visited.add(current);
+    const currentPath = queue.shift();
+    if (visited.has(currentPath)) continue;
 
-    const response = await fetchImpl(current);
+    const currentUrl = new URL(currentPath, ALLOWED_ORIGIN).toString();
+    visited.add(currentPath);
+
+    const response = await fetchImpl(currentUrl);
     if (!response.ok) continue;
 
     const contentType = response.headers.get("content-type") || "";
@@ -47,13 +62,12 @@ async function crawlSite(startUrl, maxPages = 10, fetchImpl = fetch) {
     const html = await response.text();
     const text = htmlToText(html);
     if (text) {
-      pages.push({ url: current, text });
+      pages.push({ url: currentUrl, text });
     }
 
-    for (const link of extractLinks(html, current)) {
-      const parsed = new URL(link);
-      if (parsed.hostname === start.hostname && !visited.has(parsed.toString())) {
-        queue.push(parsed.toString());
+    for (const linkPath of extractLinks(html, currentUrl)) {
+      if (!visited.has(linkPath)) {
+        queue.push(linkPath);
       }
     }
   }
@@ -61,4 +75,4 @@ async function crawlSite(startUrl, maxPages = 10, fetchImpl = fetch) {
   return pages;
 }
 
-module.exports = { crawlSite, htmlToText };
+module.exports = { crawlSite, htmlToText, isAllowedUrl };

@@ -69,8 +69,8 @@ function App() {
         <p>{answer || 'No answer yet.'}</p>
         {evidence.length > 0 && (
           <ul>
-            {evidence.map((item) => (
-              <li key={`${item.sourceUrl}-${item.score}`}>
+            {evidence.map((item, index) => (
+              <li key={`${item.sourceUrl}-${index}`}>
                 {item.sourceUrl} (score: {item.score})
               </li>
             ))}
