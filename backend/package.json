@@ -1,0 +1,16 @@
+{
+  "name": "sece-rag-backend",
+  "version": "1.0.0",
+  "description": "Backend API for the SECE Intelligent RAG Assistant",
+  "type": "commonjs",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "mongodb": "^6.8.0"
+  }
+}
