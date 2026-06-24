@@ -1,0 +1,14 @@
+{
+  "name": "sece-rag-scraper-v2",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node crawler.js"
+  },
+  "dependencies": {
+    "@xenova/transformers": "^2.17.2",
+    "axios": "^1.7.2",
+    "better-sqlite3": "^11.1.2",
+    "cheerio": "^1.0.0-rc.12"
+  }
+}
