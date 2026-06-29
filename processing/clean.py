@@ -18,12 +18,8 @@ def clean_html(html_content):
     for element in soup(["script", "style", "header", "footer", "nav", "aside", "noscript"]):
         element.extract()
         
-    # Remove elements by typical class/id names for boilerplates
-    for element in soup.find_all(attrs={"class": re.compile(r'(?i)nav|footer|header|menu|sidebar|widget|cookie|banner|spam')}):
-        element.extract()
-        
-    for element in soup.find_all(attrs={"id": re.compile(r'(?i)nav|footer|header|menu|sidebar|widget|cookie|banner|spam')}):
-        element.extract()
+    # We removed the aggressive regex by class/id (nav|footer|header|menu|sidebar|widget|cookie|banner|spam)
+    # because it was matching 'elementor-widget' and deleting the entire page content.
 
     # Get text
     text = soup.get_text(separator=' ')
