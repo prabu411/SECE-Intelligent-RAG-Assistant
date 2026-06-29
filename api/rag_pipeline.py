@@ -31,8 +31,9 @@ class RAGPipeline:
         self.openai_key = os.environ.get("OPENAI_API_KEY")
         self.grok_key = os.environ.get("GROK_API")
         self.gemini_key = os.environ.get("GEMINI")
+        self.groq_key = os.environ.get("GROQ_API_KEY")
         
-        if not any([self.openai_key, self.grok_key, self.gemini_key]) or self.openai_key == "your_openai_api_key_here":
+        if not any([self.openai_key, self.grok_key, self.gemini_key, self.groq_key]) or self.openai_key == "your_openai_api_key_here":
             logging.warning("No valid LLM API keys found. Generation will fail.")
             
     def ask(self, question: str, history: list = None) -> dict:
@@ -66,7 +67,7 @@ class RAGPipeline:
                 
         context_text = "\n\n---\n\n".join(context_parts)
         
-        if not any([self.openai_key, self.grok_key, self.gemini_key]) or self.openai_key == "your_openai_api_key_here":
+        if not any([self.openai_key, self.grok_key, self.gemini_key, self.groq_key]) or self.openai_key == "your_openai_api_key_here":
             return {
                 "answer": f"API keys missing. Here is the retrieved context instead:\n\n{context_text}",
                 "sources": sources
@@ -95,6 +96,22 @@ class RAGPipeline:
         answer = None
         error_logs = []
 
+        # Try Groq (free, fast inference)
+        if not answer and self.groq_key:
+            try:
+                client = OpenAI(api_key=self.groq_key, base_url="https://api.groq.com/openai/v1")
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=messages,
+                    temperature=0.0,
+                    max_tokens=500
+                )
+                answer = response.choices[0].message.content
+                logging.info("Successfully generated answer using Groq.")
+            except Exception as e:
+                error_logs.append(f"Groq failed: {e}")
+                logging.error(f"Groq fallback triggered: {e}")
+
         # Try OpenAI
         if not answer and self.openai_key and self.openai_key != "your_openai_api_key_here":
             try:
@@ -116,7 +133,7 @@ class RAGPipeline:
             try:
                 client = OpenAI(api_key=self.grok_key, base_url="https://api.x.ai/v1")
                 response = client.chat.completions.create(
-                    model="grok-beta",
+                    model="grok-3-mini-fast",
                     messages=messages,
                     temperature=0.0,
                     max_tokens=500
@@ -130,9 +147,9 @@ class RAGPipeline:
         # Try Gemini
         if not answer and self.gemini_key:
             try:
-                import google.generativeai as genai
-                genai.configure(api_key=self.gemini_key)
-                model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=system_prompt)
+                from google import genai
+                from google.genai import types
+                client = genai.Client(api_key=self.gemini_key)
                 
                 chat_history = ""
                 if history:
@@ -141,9 +158,13 @@ class RAGPipeline:
                 
                 full_prompt = chat_history + user_prompt
                 
-                response = model.generate_content(
-                    full_prompt,
-                    generation_config=genai.types.GenerationConfig(temperature=0.0)
+                response = client.models.generate_content(
+                    model="gemini-2.0-flash",
+                    contents=full_prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                        temperature=0.0,
+                    )
                 )
                 answer = response.text
                 logging.info("Successfully generated answer using Gemini.")
