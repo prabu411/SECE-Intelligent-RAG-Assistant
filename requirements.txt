@@ -9,4 +9,4 @@ sentence-transformers
 python-dotenv
 pydantic
 openai
-google-generativeai
+google-genai
